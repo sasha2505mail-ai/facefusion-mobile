@@ -12,11 +12,11 @@
 
 namespace ffnn {
 
-// Заглушки для отключения QNN на сервере GitHub
-bool qnnInit(const InitSpec&) { return false; }
-Handle qnnOpen(const std::string&) { return nullptr; }
+// Нативные заглушки для безопасного отключения QNN
+bool qnnInit(const ffnn::InitSpec&) { return false; }
+ffnn::Handle qnnOpen(const std::string&) { return nullptr; }
 const char* qnnLastError() { return "QNN Disabled"; }
-DeviceInfo qnnDeviceInfo() { return DeviceInfo(); }
+ffnn::DeviceInfo qnnDeviceInfo() { return ffnn::DeviceInfo(); }
 const std::vector<std::string>& qnnChain() { static std::vector<std::string> empty; return empty; }
 bool qnnVariantPresent(const std::string&) { return false; }
 void qnnUseTier(const std::string&) {}
