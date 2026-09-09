@@ -3,8 +3,8 @@ project(ffnative)
 
 # The same four objects the headless CLI links (work/native/ffswap_main.cpp), plus the JNI
 # bridge.  Keeping them identical is what makes the CLI a valid harness for the app.
-add_library(ffnative SHARED ffjni.cpp ffpipe.cpp ffcv.cpp ffqnn.cpp
-                            ffnn.cpp ffnn_qnn.cpp ffaudio.cpp)
+add_library(ffnative SHARED ffjni.cpp ffpipe.cpp ffcv.cpp 
+                            ffnn.cpp ffaudio.cpp)
 
 # Both roots are needed: ffqnn.cpp includes "QNN/QnnBackend.h", while the SDK's own
 # sub-headers include their siblings unqualified.
