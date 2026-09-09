@@ -447,9 +447,9 @@ Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv *env, jobject thiz, jstri
 // published is an error, and on a brand-new arch it would be the error every user of that
 // chip hits. Handing Kotlin the whole chain keeps the rule in one place: C++ decides what
 // is loadable, the downloader decides what is available.
-JNIEXPORT jint JNICALL
-Java_com_facefusion_mobile_NativePipe_probeTierChain(JNIEnv *env, jobject thiz) {
-    return -1; 
+JNIEXPORT jstring JNICALL
+Java_com_facefusion_mobile_NativePipe_probeTierChain(JNIEnv* env, jclass, jstring jLib, jstring jSkel) {
+  return env->NewStringUTF("");
 }
 
 // "yes" | "no" | "unknown".  A String rather than a tri-state enum because "unknown" has
@@ -479,8 +479,8 @@ Java_com_facefusion_mobile_NativePipe_probeFp16(JNIEnv* env, jclass, jstring jLi
 // other field is meaningless -- it does not mean the chip is old, which is the same
 // distinction pickTier and the fp16 canary both have to make.
 JNIEXPORT jstring JNICALL
-Java_com_facefusion_mobile_NativePipe_probeDeviceInfo(JNIEnv *env, jobject thiz) {
-    return env->NewStringUTF("QNN Disabled in Build");
+Java_com_facefusion_mobile_NativePipe_probeDeviceInfo(JNIEnv* env, jclass) {
+  return env->NewStringUTF("Disabled");
 }
 
 // Was the ncnn backend LINKED into this build?
