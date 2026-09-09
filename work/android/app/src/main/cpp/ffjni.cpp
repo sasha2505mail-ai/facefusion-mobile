@@ -435,17 +435,9 @@ Java_com_facefusion_mobile_NativePipe_hasEnhancer(JNIEnv*, jclass) {
 // Which context-binary tier this chip needs. Callable BEFORE any model exists, which is
 // the point: the app has to know which files it is looking for before it can complain
 // that they are missing.
-JNIEXPORT jstring JNICALL
-Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv* env, jclass, jstring jLib,
-                                                jstring jSkel) {
-  std::string lib = jstr(env, jLib);
-  if (!ffqnn::init(lib + "/libQnnHtp.so", lib + "/libQnnSystem.so", jstr(env, jSkel))) {
-    g_err = ffqnn::lastError();
-    // Not an exception: pickTier's own fallback is the right answer when the backend
-    // cannot come up, and the caller still gets a usable suffix.
-    return env->NewStringUTF(ffqnn::pickTier(ffqnn::DeviceInfo{}).c_str());
-  }
-  return env->NewStringUTF(ffqnn::pickTier(ffqnn::deviceInfo()).c_str());
+JNIEXPORT jint JNICALL
+Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv *env, jobject thiz, jstring cacheDir, jstring libDir, jstring modelDir) {
+    return -1; // Принудительный возврат ошибки (NPU недоступен)
 }
 
 // Every tier this chip can load, best first, comma-joined: "v81,v73,v68".
@@ -455,42 +447,9 @@ Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv* env, jclass, jstring jLi
 // published is an error, and on a brand-new arch it would be the error every user of that
 // chip hits. Handing Kotlin the whole chain keeps the rule in one place: C++ decides what
 // is loadable, the downloader decides what is available.
-JNIEXPORT jstring JNICALL
-Java_com_facefusion_mobile_NativePipe_probeTierChain(JNIEnv* env, jclass, jstring jLib,
-                                                     jstring jSkel) {
-  std::string lib = jstr(env, jLib);
-  // Ask the SEAM first, because on a non-Qualcomm part the answer is not an arch tier at
-  // all -- it is "ncnn", one variant, and the downloader must fetch a completely different
-  // model set. Going straight to ffqnn here is what would hand a Mali phone a chain of
-  // Hexagon context binaries it can never load: ffqnn::init fails, `d` stays unmeasured,
-  // and tierChain's fallback confidently answers "v68".
-  ffnn::InitSpec spec;
-  spec.libDir = lib;
-  spec.skelDir = jstr(env, jSkel);
-  spec.modelDir = lib;   // unused by init
-  if (ffnn::init(ffnn::Backend::Auto, spec) && ffnn::active() == ffnn::Backend::Ncnn) {
-    std::string out;
-    for (const std::string& v : ffnn::variantChain(ffnn::Backend::Ncnn)) {
-      if (!out.empty()) out += ",";
-      out += v;
-    }
-    return env->NewStringUTF(out.c_str());
-  }
-  // QNN, including the case where the backend did not come up at all. Deliberately NOT
-  // routed through the seam: ffqnn::tierChain has its own fallback for an unmeasured
-  // device, and that fallback is the right answer here -- a transient QNN init failure on
-  // a Hexagon part must still produce a loadable chain, not an empty one.
-  ffqnn::DeviceInfo d{};
-  if (!ffqnn::init(lib + "/libQnnHtp.so", lib + "/libQnnSystem.so", jstr(env, jSkel)))
-    g_err = ffqnn::lastError();   // leave d unmeasured; the chain's own fallback applies
-  else
-    d = ffqnn::deviceInfo();
-  std::string out;
-  for (const std::string& t : ffqnn::tierChain(d)) {
-    if (!out.empty()) out += ",";
-    out += t;
-  }
-  return env->NewStringUTF(out.c_str());
+JNIEXPORT jint JNICALL
+Java_com_facefusion_mobile_NativePipe_probeTierChain(JNIEnv *env, jobject thiz) {
+    return -1; 
 }
 
 // "yes" | "no" | "unknown".  A String rather than a tri-state enum because "unknown" has
@@ -520,44 +479,8 @@ Java_com_facefusion_mobile_NativePipe_probeFp16(JNIEnv* env, jclass, jstring jLi
 // other field is meaningless -- it does not mean the chip is old, which is the same
 // distinction pickTier and the fp16 canary both have to make.
 JNIEXPORT jstring JNICALL
-Java_com_facefusion_mobile_NativePipe_probeDeviceInfo(JNIEnv* env, jclass, jstring jLib,
-                                                       jstring jSkel) {
-  std::string lib = jstr(env, jLib);
-  // The RUNTIME first, and OUTSIDE the ok=0 early returns below. `ok` describes the HTP
-  // probe, and on a part with no Hexagon that probe is *supposed* to fail -- reporting only
-  // "ok=0" there would leave the settings panel unable to say what the device is actually
-  // running, which is the one thing a non-Qualcomm user needs it to say.
-  std::string pre;
-  {
-    ffnn::InitSpec spec;
-    spec.libDir = lib;
-    spec.skelDir = jstr(env, jSkel);
-    spec.modelDir = lib;
-    if (ffnn::init(ffnn::Backend::Auto, spec)) {
-      const bool ncnn = ffnn::active() == ffnn::Backend::Ncnn;
-      pre = std::string(";backend=") + (ncnn ? "ncnn" : "qnn");
-      if (ncnn) pre += ffnn::deviceInfo(ffnn::Backend::Ncnn).gpu ? ";gpu=1" : ";gpu=0";
-    } else {
-      pre = ";backend=none";
-    }
-  }
-  if (!ffqnn::init(lib + "/libQnnHtp.so", lib + "/libQnnSystem.so", jstr(env, jSkel))) {
-    g_err = ffqnn::lastError();
-    return env->NewStringUTF(("ok=0" + pre).c_str());
-  }
-  ffqnn::DeviceInfo d = ffqnn::deviceInfo();
-  if (!d.ok) {
-    g_err = ffqnn::lastError();
-    return env->NewStringUTF(("ok=0" + pre).c_str());
-  }
-  std::string s = "ok=1" + pre;
-  s += ";arch=" + std::to_string(d.arch);
-  s += ";vtcm=" + std::to_string((unsigned long long)d.vtcmMb);
-  s += ";soc=" + std::to_string((unsigned long)d.socModel);
-  s += ";signedPd=" + std::to_string(d.signedPd ? 1 : 0);
-  s += ";dlbc=" + std::to_string(d.dlbc ? 1 : 0);
-  s += ";tier=" + ffqnn::pickTier(d);
-  return env->NewStringUTF(s.c_str());
+Java_com_facefusion_mobile_NativePipe_probeDeviceInfo(JNIEnv *env, jobject thiz) {
+    return env->NewStringUTF("QNN Disabled in Build");
 }
 
 // Was the ncnn backend LINKED into this build?
