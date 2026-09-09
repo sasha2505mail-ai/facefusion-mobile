@@ -455,21 +455,9 @@ Java_com_facefusion_mobile_NativePipe_probeTierChain(JNIEnv* env, jclass, jstrin
 // "yes" | "no" | "unknown".  A String rather than a tri-state enum because "unknown" has
 // to be impossible to confuse with "no" at the call site -- a boolean here would make the
 // control's whole purpose unrepresentable.
-JNIEXPORT jstring JNICALL
-Java_com_facefusion_mobile_NativePipe_probeFp16(JNIEnv* env, jclass, jstring jLib,
-                                                jstring jSkel, jstring jCanaryDir) {
-  std::string lib = jstr(env, jLib);
-  if (!ffqnn::init(lib + "/libQnnHtp.so", lib + "/libQnnSystem.so", jstr(env, jSkel))) {
-    g_err = ffqnn::lastError();
-    return env->NewStringUTF("unknown");
-  }
-  switch (ffqnn::fp16Canary(jstr(env, jCanaryDir))) {
-    case ffqnn::Fp16::Yes: return env->NewStringUTF("yes");
-    case ffqnn::Fp16::No:  return env->NewStringUTF("no");
-    default:
-      g_err = ffqnn::lastError();
-      return env->NewStringUTF("unknown");
-  }
+JNIEXPORT jboolean JNICALL
+Java_com_facefusion_mobile_NativePipe_probeFp16(JNIEnv* env, jclass) {
+  return JNI_FALSE;
 }
 
 // What the HTP actually reports, as `key=value;` pairs.
