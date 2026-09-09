@@ -435,9 +435,9 @@ Java_com_facefusion_mobile_NativePipe_hasEnhancer(JNIEnv*, jclass) {
 // Which context-binary tier this chip needs. Callable BEFORE any model exists, which is
 // the point: the app has to know which files it is looking for before it can complain
 // that they are missing.
-JNIEXPORT jint JNICALL
-Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv *env, jobject thiz, jstring cacheDir, jstring libDir, jstring modelDir) {
-    return -1; // Принудительный возврат ошибки (NPU недоступен)
+JNIEXPORT jstring JNICALL
+Java_com_facefusion_mobile_NativePipe_probeTier(JNIEnv* env, jclass, jstring jLib, jstring jSkel) {
+  return env->NewStringUTF("cpu");
 }
 
 // Every tier this chip can load, best first, comma-joined: "v81,v73,v68".
