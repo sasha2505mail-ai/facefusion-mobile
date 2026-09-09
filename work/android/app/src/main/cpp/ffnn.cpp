@@ -12,15 +12,15 @@
 
 namespace ffnn {
 
-// Implemented in ffnn_qnn.cpp.
-bool qnnInit(const InitSpec&);
-Handle qnnOpen(const std::string&);
-const char* qnnLastError();
-DeviceInfo qnnDeviceInfo();
-const std::vector<std::string>& qnnChain();
-bool qnnVariantPresent(const std::string&);
-void qnnUseTier(const std::string&);
-const std::string& qnnTier();
+// Заглушки для отключения QNN на сервере GitHub
+bool qnnInit(const InitSpec&) { return false; }
+Handle qnnOpen(const std::string&) { return nullptr; }
+const char* qnnLastError() { return "QNN Disabled"; }
+DeviceInfo qnnDeviceInfo() { return DeviceInfo(); }
+const std::vector<std::string>& qnnChain() { static std::vector<std::string> empty; return empty; }
+bool qnnVariantPresent(const std::string&) { return false; }
+void qnnUseTier(const std::string&) {}
+const std::string& qnnTier() { static std::string empty; return empty; }
 
 #ifdef FFNN_HAVE_NCNN
 // Implemented in ffnn_ncnn.cpp.
@@ -232,3 +232,12 @@ const std::string& variant() {
 }
 
 }  // namespace ffnn
+
+// Вставляем заглушки для линкера, чтобы убрать ошибку undefined symbol ffqnn::
+namespace ffqnn {
+    void release(void* ptr) {}
+    bool execute(void* h, const std::vector<std::string>& names, const std::vector<const float*>& data, std::vector<std::vector<float>>& outs) { return false; }
+    std::vector<std::vector<int>> outputShapes(void* h) { return {}; }
+    std::vector<std::string> inputNames(void* h) { return {}; }
+    std::vector<std::vector<int>> inputShapes(void* h) { return {}; }
+}
